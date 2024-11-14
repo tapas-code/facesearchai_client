@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload as UploadIcon, Image, Video, X, Brain } from "lucide-react";
 import loaderWebM from "../assets/animationv1.webm";
 import { useNavigate } from "react-router";
+import BASE_URL from "../utils/helper";
 
 const Upload = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -52,11 +53,47 @@ const Upload = () => {
 
   // Handle analysis
   const handleAnalysis = () => {
+    if (files.length === 0) {
+      console.error("No file selected.");
+      return;
+    }
+
+    const file = files[0];
+
     setLoading(true);
+
+    // Simulate loading state
     setTimeout(() => {
       setLoading(false);
       setIsAnalyzed(true);
     }, 3600);
+
+    try {
+      const formData = new FormData();
+      formData.append("fileName", file.name);
+      formData.append("file", file);
+      formData.append("fileSize", file.size.toString());
+
+      // Send the file to the backend API
+      fetch(`${BASE_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to upload file.");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("File uploaded successfully:", data);
+        })
+        .catch((error) => {
+          console.error("Upload error:", error);
+        });
+    } catch (err) {
+      console.error("Error while uploading file:", err);
+    }
   };
 
   return (
@@ -130,7 +167,9 @@ const Upload = () => {
                     muted
                     className="h-40"
                   />
-                  <p className="text-md font-medium text-gray-300">Analyzing...</p>
+                  <p className="text-md font-medium text-gray-300">
+                    Analyzing...
+                  </p>
                 </div>
               </div>
             ) : isAnalyzed ? (
@@ -138,9 +177,10 @@ const Upload = () => {
                 <p className="text-md font-semibold text-gray-300 mb-4">
                   Subscribe to Preview Results
                 </p>
-                <button 
-                onClick={()=>navigate('/pricing')}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
+                <button
+                  onClick={() => navigate("/pricing")}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                >
                   Subscribe
                 </button>
               </div>
