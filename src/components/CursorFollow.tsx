@@ -3,8 +3,15 @@ import { motion } from "framer-motion";
 
 const CursorFollow = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isCursorSupported, setIsCursorSupported] = useState(false);
 
   useEffect(() => {
+    // Check if the device supports hover (e.g., desktops or laptops)
+    const hasHover = window.matchMedia("(hover: hover)").matches;
+    setIsCursorSupported(hasHover);
+
+    if (!hasHover) return;
+
     const updateMousePosition = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
@@ -15,6 +22,9 @@ const CursorFollow = () => {
       window.removeEventListener("mousemove", updateMousePosition);
     };
   }, []);
+
+  // Only render the cursor follower if hover is supported
+  if (!isCursorSupported) return null;
 
   return (
     <motion.div
