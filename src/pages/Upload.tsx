@@ -1,36 +1,62 @@
-import { useCallback, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useDropzone } from 'react-dropzone';
-import { Upload as UploadIcon, Image, Video, X, Brain } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useDropzone } from "react-dropzone";
+import { Upload as UploadIcon, Image, Video, X, Brain } from "lucide-react";
+import loaderWebM from "../assets/animationv1.webm";
+import { useNavigate } from "react-router";
 
 const Upload = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isAnalyzed, setIsAnalyzed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const navigate = useNavigate();
 
+  // Set playback rate for the loader animation
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1.5;
+    }
+  }, [videoRef]);
+
+  // Handle file drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     setFiles([file]);
-    
+
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
     setPreview(previewUrl);
+    setIsAnalyzed(false);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png'],
-      'video/*': ['.mp4', '.webm']
+      "image/*": [".jpeg", ".jpg", ".png"],
+      "video/*": [".mp4", ".webm"],
     },
-    maxFiles: 1
+    maxFiles: 1,
   });
 
+  // Remove the selected file
   const removeFile = () => {
     if (preview) {
       URL.revokeObjectURL(preview);
     }
     setFiles([]);
     setPreview(null);
+    setIsAnalyzed(false);
+  };
+
+  // Handle analysis
+  const handleAnalysis = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setIsAnalyzed(true);
+    }, 3600);
   };
 
   return (
@@ -54,8 +80,8 @@ const Upload = () => {
             {...getRootProps()}
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
               isDragActive
-                ? 'border-blue-500 bg-blue-500/10'
-                : 'border-gray-600 hover:border-blue-500 hover:bg-gray-800/50'
+                ? "border-blue-500 bg-blue-500/10"
+                : "border-gray-600 hover:border-blue-500 hover:bg-gray-800/50"
             }`}
           >
             <input {...getInputProps()} />
@@ -93,44 +119,69 @@ const Upload = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-gray-800/50 rounded-xl p-6"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Selected File</h3>
-              <button
-                onClick={removeFile}
-                className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-red-500" />
-              </button>
-            </div>
-            
-            <div className="relative rounded-lg overflow-hidden">
-              {preview && (
-                files[0].type.startsWith('image') ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                ) : (
+            {loading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="flex flex-col items-center gap-3">
                   <video
-                    src={preview}
-                    controls
-                    className="w-full h-64 object-cover rounded-lg"
+                    ref={videoRef}
+                    src={loaderWebM}
+                    autoPlay
+                    loop
+                    muted
+                    className="h-40"
                   />
-                )
-              )}
-            </div>
+                  <p className="text-md font-medium text-gray-300">Analyzing...</p>
+                </div>
+              </div>
+            ) : isAnalyzed ? (
+              <div className="flex flex-col items-center justify-center py-10">
+                <p className="text-md font-semibold text-gray-300 mb-4">
+                  Subscribe to Preview Results
+                </p>
+                <button 
+                onClick={()=>navigate('/pricing')}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
+                  Subscribe
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Selected File</h3>
+                  <button
+                    onClick={removeFile}
+                    className="p-2 hover:bg-red-500/20 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-red-500" />
+                  </button>
+                </div>
 
-            <button
-              className="mt-6 w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-2"
-              onClick={() => {
-                // Handle analysis here
-                console.log('Starting analysis...');
-              }}
-            >
-              <Brain className="w-5 h-5" />
-              <span>Start Analysis</span>
-            </button>
+                <div className="relative rounded-lg overflow-hidden">
+                  {preview &&
+                    (files[0].type.startsWith("image") ? (
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <video
+                        src={preview}
+                        controls
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    ))}
+                </div>
+
+                <button
+                  className="mt-6 w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-2"
+                  onClick={handleAnalysis}
+                >
+                  <Brain className="w-5 h-5" />
+                  <span>Start Analysis</span>
+                </button>
+              </>
+            )}
           </motion.div>
         )}
       </motion.div>
